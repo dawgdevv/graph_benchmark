@@ -3,7 +3,7 @@ from statistics import mean,stdev
 import numpy as np
 
 
-def summarize_latencies(latencies_ms: list[float])-> dict[str,float]
+def summarize_latencies(latencies_ms: list[float])-> dict[str,float]:
     if not latencies_ms:
         raise ValueError("latencies_ms cannot be empty")
 

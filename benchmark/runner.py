@@ -7,7 +7,7 @@ from benchmark.config import (
     READ_ITERATIONS,
     WARMUP_ITERATIONS,
 )
-from benchmark.metrics import summarize_latencies
+from benchmark.metrices import summarize_latencies
 from benchmark.workloads import (
     AGGREGATION,
     INDEXED_LOOKUP,

@@ -1,13 +1,16 @@
 from pathlib import Path
 import gzip
 import shutil
+import sys
 import urllib.request
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from benchmark.config import DATASET_DIR, RAW_DATASET_PATH
 
 
 DATASET_URL = "https://snap.stanford.edu/data/wiki-Vote.txt.gz"
-COMPRESSED_PATH = DATASET_DIR / "Wiki-Vote.txt.gz"
+COMPRESSED_PATH = DATASET_DIR / "wiki-Vote.txt.gz"
 
 
 def download_dataset() -> None:

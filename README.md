@@ -29,6 +29,15 @@ Wiki-Vote (~7k nodes / 104k edges) fits the tightest advertised RAM (FalkorDB 10
 tightest advertised disk (CognoDB 1 GB). CognoDB's public site lists **512 MB** for `c0`; the
 assignment brief said 256 MB — this README uses the vendor figure.
 
+> **Note — TypeDB is the only other forever-free instance in the same product class as CognoDB.**
+> Both are a dedicated managed server you keep (no card, no 14-day clock), with published vCPU,
+> RAM and storage. That is the closest like-for-like to CognoDB `c0`. The others are a different
+> kind of “free”: Neo4j Aura Free hides hardware and caps the graph (200k/400k); Memgraph Cloud
+> is a 14-day trial; FalkorDB Free is a 100 MB in-memory sandbox with no TLS and no persistence.
+> TypeDB Explore is still **not resource-matched** — it is larger (2 burstable vCPU / 4 GB / 10 GB
+> vs CognoDB’s 0.5 vCPU / 512 MB / 1 GB) — so treat it as the same *type* of free instance, not
+> the same box.
+
 **Sources** (what each free plan actually publishes):
 
 - CognoDB: [cognodb.com](https://cognodb.com/) — “One c0 instance: 0.5 vCPU, 512 MB of memory and 1 GB of storage, with 200 connections.”
@@ -256,6 +265,9 @@ graph_benchmark/
   (10 errors, 99.0% success at 40 clients). Errors are counted and reported, not hidden.
 - **No dataset caching on target**: each load starts from an empty graph (verified counts) so partial
   retries can't contaminate numbers.
+- **TypeDB is the only other forever-free dedicated instance comparable to CognoDB.** Same product
+  shape (keep a managed server, published vCPU/RAM/storage). It is not the same size (TypeDB is
+  larger). Neo4j Free, Memgraph trial, and FalkorDB 100 MB are different kinds of free tier.
 - **TypeDB is TypeQL, not Cypher.** Workloads are the same logical ops (`user` / `voted` / `user-id @key`);
   ingest of 103k relations via match-insert is expected to be slower than Bolt `UNWIND`. TypeDB results
   are not yet in the matrix (adapter wired, run pending).

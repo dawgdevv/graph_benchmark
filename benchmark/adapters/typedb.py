@@ -49,6 +49,7 @@ define
 """
 
 WRITE_TIMEOUT = TransactionOptions(transaction_timeout_millis=10 * 60 * 1000)
+READ_TIMEOUT = TransactionOptions(transaction_timeout_millis=10 * 60 * 1000)
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
 INSERT_CHUNK = 500
 
@@ -202,17 +203,26 @@ class TypeDBCloudAdapter(DatabaseAdapter):
                 self._drain(tx.query(query, given_rows=chunk).resolve())
             tx.commit()
 
-    def _read(self, query: str):
-        with self.driver.transaction(self.database, TransactionType.READ) as tx:
-            return tx.query(query).resolve()
+    def _read(self, query: str, consume):
+        # TypeDB streams answers lazily. Closing the transaction before the
+        # iterator is drained raises REX1 ("concurrent transaction close").
+        with self.driver.transaction(
+            self.database,
+            TransactionType.READ,
+            options=READ_TIMEOUT,
+        ) as tx:
+            return consume(tx.query(query).resolve())
 
     def _reduce_count(self, query: str) -> int:
-        answer = self._read(query)
-        for row in answer.as_concept_rows():
-            value = _as_int(row.get("count"))
-            if value is not None:
-                return value
-        return 0
+        def consume(answer) -> int:
+            found = 0
+            for row in answer.as_concept_rows():
+                value = _as_int(row.get("count"))
+                if value is not None and found == 0:
+                    found = value
+            return found
+
+        return self._read(query, consume)
 
     def _define_schema(self, _params: dict[str, Any]):
         try:
@@ -261,19 +271,19 @@ class TypeDBCloudAdapter(DatabaseAdapter):
 
     def _point_lookup(self, params: dict[str, Any]):
         node_id = _id(params["id"])
-        answer = self._read(
+        return self._read(
             f'match $u isa user, has user-id "{node_id}"; '
-            'fetch { "id": $u.user-id };'
+            'fetch { "id": $u.user-id };',
+            lambda answer: list(answer.as_concept_documents()),
         )
-        return list(answer.as_concept_documents())
 
     def _indexed_lookup(self, params: dict[str, Any]):
         node_id = _id(params["id"])
-        answer = self._read(
+        return self._read(
             f'match $u isa user, has user-id $id; $id == "{node_id}"; '
-            'fetch { "id": $id };'
+            'fetch { "id": $id };',
+            lambda answer: list(answer.as_concept_documents()),
         )
-        return list(answer.as_concept_documents())
 
     def _hop(self, depth: int):
         hops = ["(voter: $n0, votee: $n1) isa voted;"]
@@ -297,7 +307,7 @@ class TypeDBCloudAdapter(DatabaseAdapter):
         return run
 
     def _aggregation(self, _params: dict[str, Any]):
-        answer = self._read(
+        return self._read(
             """
             match
               $u isa user, has user-id $id;
@@ -305,9 +315,9 @@ class TypeDBCloudAdapter(DatabaseAdapter):
             reduce $votes = count groupby $id;
             sort $votes desc;
             limit 100;
-            """
+            """,
+            lambda answer: list(answer.as_concept_rows()),
         )
-        return list(answer.as_concept_rows())
 
     def _write_tick(self, params: dict[str, Any]):
         node_id = _id(params["id"])

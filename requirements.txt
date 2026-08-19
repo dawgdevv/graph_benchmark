@@ -1,6 +1,6 @@
 neo4j
 falkordb
-surrealdb
+typedb-driver
 python-dotenv
 numpy
 pandas

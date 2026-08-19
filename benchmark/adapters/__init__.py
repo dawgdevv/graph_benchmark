@@ -2,7 +2,7 @@ from benchmark.adapters.cognodb import CognoDBAdapter
 from benchmark.adapters.falkordb import FalkorDBCloudAdapter
 from benchmark.adapters.memgraph import MemgraphCloudAdapter
 from benchmark.adapters.neo4j import Neo4jAuraAdapter
-from benchmark.adapters.surreal import SurrealDBCloudAdapter
+from benchmark.adapters.typedb import TypeDBCloudAdapter
 
 
 def get_adapter(database_name: str):
@@ -18,7 +18,7 @@ def get_adapter(database_name: str):
     if database_name == "falkordb":
         return FalkorDBCloudAdapter()
 
-    if database_name == "surrealdb":
-        return SurrealDBCloudAdapter()
+    if database_name == "typedb":
+        return TypeDBCloudAdapter()
 
     raise ValueError(f"Unknown database: {database_name}")

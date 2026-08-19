@@ -24,9 +24,6 @@ ON (u.id)
 
 CREATE_USER_INDEX_MEMGRAPH = "CREATE INDEX ON :User(id)"
 CREATE_USER_INDEX_FALKORDB = "CREATE INDEX FOR (u:User) ON (u.id)"
-CREATE_USER_INDEX_SURREAL = (
-    "DEFINE INDEX IF NOT EXISTS user_id_index ON user FIELDS wiki_id UNIQUE"
-)
 
 LOAD_NODES = """
 UNWIND $rows AS row
@@ -77,8 +74,8 @@ def ensure_user_index(adapter, database_name: str) -> None:
         query = CREATE_USER_INDEX_MEMGRAPH
     elif database_name == "falkordb":
         query = CREATE_USER_INDEX_FALKORDB
-    elif database_name == "surrealdb":
-        query = CREATE_USER_INDEX_SURREAL
+    elif database_name == "typedb":
+        query = CREATE_USER_INDEX
     else:
         query = CREATE_USER_INDEX
 

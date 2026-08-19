@@ -13,7 +13,7 @@ PLATFORMS = [
     ("neo4j", "Neo4j Aura"),
     ("memgraph", "Memgraph Cloud"),
     ("falkordb", "FalkorDB Cloud"),
-    ("surrealdb", "SurrealDB Cloud"),
+    ("typedb", "TypeDB Cloud"),
 ]
 
 LABELS = dict(PLATFORMS)
@@ -22,7 +22,7 @@ COLORS = {
     "Neo4j Aura": "#2fbf8f",
     "Memgraph Cloud": "#5b8fd9",
     "FalkorDB Cloud": "#d9bd70",
-    "SurrealDB Cloud": "#b08a63",
+    "TypeDB Cloud": "#8b6bb5",
 }
 
 WORKLOADS = [
@@ -280,7 +280,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-slots = st.columns(5)
+slots = st.columns(len(PLATFORMS))
 for column, (slug, name) in zip(slots, PLATFORMS):
     payload = runs.get(slug)
     state = "ready" if payload else "waiting"

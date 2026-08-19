@@ -1,11 +1,11 @@
 # Graph Database Benchmarking Against CognoDB
 
 A reproducible, honest comparison of **CognoDB Cloud** against other managed graph databases:
-**Neo4j Aura Free**, **Memgraph Cloud**, and **FalkorDB Cloud** — same dataset, same workloads,
-same client machine, entry/free cloud tiers only.
+**Neo4j Aura Free**, **Memgraph Cloud**, **FalkorDB Cloud**, and **TypeDB Cloud** — same dataset,
+same workloads, same client machine, entry/free cloud tiers only.
 
 - Dataset: [SNAP Wiki-Vote](https://snap.stanford.edu/data/wiki-Vote.html) — 7,115 nodes, 103,689 directed edges
-- Harness: Python, official drivers (Neo4j driver / FalkorDB client), one command per platform
+- Harness: Python, official drivers (Neo4j / FalkorDB / TypeDB), one command per platform
 - Results: `results/raw/<database>.json` (raw), this README (full matrix), `dashboard/app.py` (charts)
 
 ---
@@ -22,6 +22,7 @@ so this parity is approximate — that is itself recorded honestly in the [cavea
 | Neo4j Aura | AuraDB Free | not published | not published | not published | gcp-us-central1 |
 | Memgraph Cloud | 14-day trial | not published | 2048 MB | not published | unrecorded |
 | FalkorDB Cloud | free instance | not published | not published | not published | unrecorded |
+| TypeDB Cloud | Cloud free/trial | not published | not published | not published | unrecorded |
 
 The dataset (≈104k relationships) fits comfortably in the smallest allocation (CognoDB 1 GB / 256 MB).
 
@@ -34,13 +35,17 @@ The dataset (≈104k relationships) fits comfortably in the smallest allocation 
   (`dataset/sampled_nodes.json`, seed 42) by `dataset/prepare.py`
 - Identical rows loaded into every platform
 
-**Load method (all platforms):** batched Cypher inserts via the official driver — `UNWIND $rows CREATE`
+**Load method (Cypher platforms):** batched Cypher inserts via the official driver — `UNWIND $rows CREATE`
 in batches of 500, one `User.id` index created before loading, graph cleared with `DETACH DELETE` before
 each run.
 
+**Load method (TypeDB):** same rows and logical operations, mapped to TypeQL (`user` / `voted` /
+`user-id @key`) via `typedb-driver`. Ingest uses smaller write chunks (50) because TypeDB match-insert
+is per-edge, not `UNWIND`.
+
 ## 3. Methodology
 
-- **Queries:** the same logical Cypher queries on every platform (see table below)
+- **Queries:** the same logical operations on every platform (Cypher below; TypeDB maps them to TypeQL)
 - **Warm-up:** 20 warm-up executions per workload, **not** measured (cold numbers not reported separately)
 - **Measurement:** 100 timed iterations per workload, percentiles reported (p50 / p95 / p99)
 - **Start nodes:** a fixed, randomly chosen set of 100 sampled nodes (seed 42) — same nodes on all platforms
@@ -61,7 +66,8 @@ each run.
 ## 4. How to reproduce
 
 Requires free accounts: [CognoDB](https://console.cognodb.com/signup), [Neo4j Aura](https://console.neo4j.io),
-[Memgraph Cloud](https://cloud.memgraph.com), [FalkorDB Cloud](https://app.falkordb.cloud).
+[Memgraph Cloud](https://cloud.memgraph.com), [FalkorDB Cloud](https://app.falkordb.cloud),
+[TypeDB Cloud](https://cloud.typedb.com).
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
@@ -78,11 +84,12 @@ Environment variables (`.env`, read by the harness via `python-dotenv`):
 | `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` | `neo4j+s://xxxx.databases.neo4j.io` |
 | `MEMGRAPH_URI`, `MEMGRAPH_USERNAME`, `MEMGRAPH_PASSWORD` | `bolt+ssc://<host>:7687` |
 | `FALKORDB_URI`, `FALKORDB_PASSWORD` | `falkor://<username>@<host>:<port>` (native RESP) |
+| `TYPEDB_ADDRESS`, `TYPEDB_USERNAME`, `TYPEDB_PASSWORD` | `https://<cluster>.cloud.typedb.com:8000` |
 
 Run a full cycle (prepare dataset → load → benchmark) for one platform:
 
 ```bash
-python main.py --db cognodb --all    # or: neo4j | memgraph | falkordb
+python main.py --db cognodb --all    # or: neo4j | memgraph | falkordb | typedb
 ```
 
 Or stepwise — load only, or benchmark only (benchmark assumes data already loaded once):
@@ -191,7 +198,7 @@ graph_benchmark/
 ├── main.py                # CLI: --db --load --benchmark --all
 ├── dataset/prepare.py     # SNAP Wiki-Vote → nodes.csv / edges.csv / sampled_nodes.json
 ├── benchmark/
-│   ├── adapters/          # one adapter per platform (Cypher drivers / RESP client)
+│   ├── adapters/          # one adapter per platform (Cypher / RESP / TypeQL)
 │   ├── loader.py          # batched load + index + verification
 │   ├── runner.py          # workloads, warmup/iterations, concurrency sweep
 │   ├── workloads.py       # the exact queries (identical everywhere)
@@ -203,7 +210,7 @@ graph_benchmark/
 ## 8. Caveats
 
 - **Resource parity is approximate.** Only CognoDB publishes vCPU/RAM/storage for its free tier;
-  Neo4j/Memgraph/FalkorDB publish partial or no specs. Assume their allocations ≥ CognoDB's (256 MB) —
+  Neo4j/Memgraph/FalkorDB/TypeDB publish partial or no specs. Assume their allocations ≥ CognoDB's (256 MB) —
   asymmetric allocations are the main threat to fairness in this comparison.
 - **Region variance.** Only Neo4j's region was recorded (gcp-us-central1). The others provision wherever
   the free tier assigned; a single region for all platforms is planned for a future run.
@@ -214,8 +221,8 @@ graph_benchmark/
   (10 errors, 99.0% success at 40 clients). Errors are counted and reported, not hidden.
 - **No dataset caching on target**: each load starts from an empty graph (verified counts) so partial
   retries can't contaminate numbers.
-- **SurrealDB** (5th candidate) still pending: its SurrealQL dialect and WS/REST protocol need a separate
-  adapter; the harness is structured so one adapter per platform is all that's required to extend it.
+- **TypeDB is TypeQL, not Cypher.** Workloads are the same logical ops (`user` / `voted` / `user-id @key`);
+  ingest of 103k relations via match-insert is expected to be slower than Bolt `UNWIND`.
 
 ## 9. Extension points
 

@@ -80,15 +80,15 @@ DATABASES = {
             "tier": "free instance",
         },
     },
-    "surrealdb": {
-        "label": "SurrealDB Cloud",
+    "typedb": {
+        "label": "TypeDB Cloud",
         "resources": {
             "vcpu": "not published",
-            "ram_mb": "1024",
-            "storage_gb": "1",
+            "ram_mb": "not published",
+            "storage_gb": "not published",
             "cpu_usage": "not observable",
             "memory_usage": "not observable",
-            "tier": "Cloud free instance",
+            "tier": "Cloud free/trial",
         },
     },
 }

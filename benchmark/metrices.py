@@ -13,6 +13,7 @@ def summarize_latencies(latencies_ms: list[float])-> dict[str,float]:
         "mean_ms": float(mean(latencies_ms)),
         "p50_ms": float(np.percentile(latencies_ms,50)),
         "p95_ms": float(np.percentile(latencies_ms,95)),
+        "p99_ms": float(np.percentile(latencies_ms,99)),
         "max_ms":float(max(latencies_ms)),
         "stddev_ms":0.0,
     }

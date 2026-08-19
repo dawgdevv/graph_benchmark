@@ -36,6 +36,11 @@ ORDER BY votes DESC
 LIMIT 100
 """
 
+WRITE_TICK = """
+MATCH (u:User {id: $id})
+SET u.benchmark_mark = $mark
+"""
+
 CREATE_USER_INDEX = """
 CREATE INDEX user_id_index IF NOT EXISTS
 FOR (u:User)

@@ -1,0 +1,153 @@
+{
+  "database": "neo4j",
+  "dataset": "SNAP Wiki-Vote",
+  "ingestion": {
+    "nodes": 7115,
+    "relationships": 103689,
+    "batch_size": 500,
+    "index_seconds": 0.10964712500026508,
+    "node_load_seconds": 1.4081572289996984,
+    "relationship_load_seconds": 22.002071171000352,
+    "total_seconds": 23.519875525000316,
+    "nodes_per_second": 5052.702818600894,
+    "relationships_per_second": 4712.6926912529225,
+    "node_batches": {
+      "count": 15,
+      "min_ms": 86.74396200149204,
+      "mean_ms": 93.83536293328991,
+      "p50_ms": 92.95348600062425,
+      "p95_ms": 100.26270409980496,
+      "p99_ms": 106.3363448203745,
+      "max_ms": 107.85475500051689,
+      "stddev_ms": 4.674641143713041
+    },
+    "relationship_batches": {
+      "count": 208,
+      "min_ms": 93.16252000098757,
+      "mean_ms": 105.73767095673666,
+      "p50_ms": 102.33641699869622,
+      "p95_ms": 114.85768449983878,
+      "p99_ms": 134.79033794968936,
+      "max_ms": 512.9062050000357,
+      "stddev_ms": 29.403627453745912
+    }
+  },
+  "workloads": {
+    "point_lookup": {
+      "count": 100,
+      "min_ms": 79.46543700018083,
+      "mean_ms": 104.22502179004368,
+      "p50_ms": 82.08181949976279,
+      "p95_ms": 224.86668875008033,
+      "p99_ms": 286.5453211403498,
+      "max_ms": 761.4036859995394,
+      "stddev_ms": 79.11643478648895
+    },
+    "indexed_lookup": {
+      "count": 100,
+      "min_ms": 79.12345699878642,
+      "mean_ms": 88.08240177995685,
+      "p50_ms": 81.87809549963276,
+      "p95_ms": 106.88921850032784,
+      "p99_ms": 114.29495276921638,
+      "max_ms": 491.1137790004432,
+      "stddev_ms": 41.30125819192005
+    },
+    "traversal_1hop": {
+      "count": 100,
+      "min_ms": 79.38000099966303,
+      "mean_ms": 88.6417723600789,
+      "p50_ms": 81.62415450078697,
+      "p95_ms": 91.28216549934223,
+      "p99_ms": 170.30006806970275,
+      "max_ms": 605.0996600006329,
+      "stddev_ms": 53.006349327638425
+    },
+    "traversal_2hop": {
+      "count": 100,
+      "min_ms": 78.93834599963157,
+      "mean_ms": 87.59941125006662,
+      "p50_ms": 82.25818299888488,
+      "p95_ms": 91.06178885003828,
+      "p99_ms": 98.56867552944296,
+      "max_ms": 486.6484310005035,
+      "stddev_ms": 40.46079649289915
+    },
+    "traversal_3hop": {
+      "count": 100,
+      "min_ms": 79.58575900011056,
+      "mean_ms": 89.59545439993235,
+      "p50_ms": 83.12493649918906,
+      "p95_ms": 104.17751354907521,
+      "p99_ms": 117.39428875033082,
+      "max_ms": 469.7021979991405,
+      "stddev_ms": 39.0185640846548
+    },
+    "aggregation": {
+      "count": 100,
+      "min_ms": 97.06630500113533,
+      "mean_ms": 106.9071113501559,
+      "p50_ms": 100.7829385007426,
+      "p95_ms": 111.05183434974604,
+      "p99_ms": 125.91103513892678,
+      "max_ms": 567.5040140013152,
+      "stddev_ms": 46.73837623182739
+    }
+  },
+  "index": {
+    "label": "User",
+    "property": "id",
+    "index_name": "user_id_index"
+  },
+  "mixed_workload": [
+    {
+      "concurrency": 1,
+      "operations": 1000,
+      "duration_seconds": 88.975,
+      "throughput_qps": 11.24,
+      "p50_ms": 82.5684999999794,
+      "p95_ms": 98.47316409968695,
+      "p99_ms": 183.58789980922398,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 10,
+      "operations": 1000,
+      "duration_seconds": 8.731,
+      "throughput_qps": 114.54,
+      "p50_ms": 81.97672050027904,
+      "p95_ms": 101.34677780106358,
+      "p99_ms": 120.41185158099324,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 40,
+      "operations": 1000,
+      "duration_seconds": 2.924,
+      "throughput_qps": 341.98,
+      "p50_ms": 83.25733000037872,
+      "p95_ms": 512.5210360496566,
+      "p99_ms": 564.5739214912464,
+      "errors": 0,
+      "success_rate": 1.0
+    }
+  ],
+  "resources": {
+    "vcpu": "not published",
+    "ram_mb": "not published",
+    "storage_gb": "not published",
+    "cpu_usage": "not observable",
+    "memory_usage": "not observable",
+    "tier": "AuraDB Free",
+    "limits": "200000 nodes / 400000 relationships",
+    "region": "gcp-us-central1"
+  },
+  "metadata": {
+    "sampled_nodes": 100,
+    "random_seed": 42,
+    "node_label": "User",
+    "relationship_type": "VOTED"
+  }
+}

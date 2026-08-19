@@ -33,6 +33,66 @@ WRITE_RATIO = 0.20
 
 LOAD_BATCH_SIZE = 500
 
+DATABASES = {
+    "cognodb": {
+        "label": "CognoDB Cloud",
+        "resources": {
+            "vcpu": "0.5 burstable",
+            "ram_mb": "256",
+            "storage_gb": "1",
+            "cpu_usage": "not observable",
+            "memory_usage": "not observable",
+            "tier": "free c0",
+        },
+    },
+    "neo4j": {
+        "label": "Neo4j Aura Free",
+        "resources": {
+            "vcpu": "not published",
+            "ram_mb": "not published",
+            "storage_gb": "not published",
+            "cpu_usage": "not observable",
+            "memory_usage": "not observable",
+            "tier": "AuraDB Free",
+            "limits": "200000 nodes / 400000 relationships",
+            "region": "gcp-us-central1",
+        },
+    },
+    "memgraph": {
+        "label": "Memgraph Cloud",
+        "resources": {
+            "vcpu": "not published",
+            "ram_mb": "2048",
+            "storage_gb": "not published",
+            "cpu_usage": "not observable",
+            "memory_usage": "not observable",
+            "tier": "14-day Cloud trial",
+        },
+    },
+    "falkordb": {
+        "label": "FalkorDB Cloud",
+        "resources": {
+            "vcpu": "not published",
+            "ram_mb": "not published",
+            "storage_gb": "not published",
+            "cpu_usage": "not observable",
+            "memory_usage": "not observable",
+            "tier": "free instance",
+        },
+    },
+    "surrealdb": {
+        "label": "SurrealDB Cloud",
+        "resources": {
+            "vcpu": "not published",
+            "ram_mb": "1024",
+            "storage_gb": "1",
+            "cpu_usage": "not observable",
+            "memory_usage": "not observable",
+            "tier": "Cloud free instance",
+        },
+    },
+}
+
 
 def ensure_directories() -> None:
     DATASET_DIR.mkdir(parents=True, exist_ok=True)

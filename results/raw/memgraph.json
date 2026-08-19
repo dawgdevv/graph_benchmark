@@ -1,0 +1,151 @@
+{
+  "database": "memgraph",
+  "dataset": "SNAP Wiki-Vote",
+  "ingestion": {
+    "nodes": 7115,
+    "relationships": 103689,
+    "batch_size": 500,
+    "index_seconds": 0.27942442599851347,
+    "node_load_seconds": 4.150913888999639,
+    "relationship_load_seconds": 60.21369747800054,
+    "total_seconds": 64.6440357929987,
+    "nodes_per_second": 1714.0803664599023,
+    "relationships_per_second": 1722.016822466075,
+    "node_batches": {
+      "count": 15,
+      "min_ms": 271.9522269999288,
+      "mean_ms": 276.68990280011104,
+      "p50_ms": 276.67771999949764,
+      "p95_ms": 279.2377943003885,
+      "p99_ms": 280.1125316596517,
+      "max_ms": 280.33121599946753,
+      "stddev_ms": 1.9367910288319221
+    },
+    "relationship_batches": {
+      "count": 208,
+      "min_ms": 273.8971879989549,
+      "mean_ms": 289.4485268604967,
+      "p50_ms": 280.79110349972325,
+      "p95_ms": 286.5597135008102,
+      "p99_ms": 550.0388039209975,
+      "max_ms": 622.8920409994316,
+      "stddev_ms": 49.438132316999855
+    }
+  },
+  "workloads": {
+    "point_lookup": {
+      "count": 100,
+      "min_ms": 263.31410400052846,
+      "mean_ms": 270.547929750137,
+      "p50_ms": 266.50515150049614,
+      "p95_ms": 286.32120625106836,
+      "p99_ms": 291.33046494835077,
+      "max_ms": 300.78159400000004,
+      "stddev_ms": 7.9262619999794515
+    },
+    "indexed_lookup": {
+      "count": 100,
+      "min_ms": 263.56050899994443,
+      "mean_ms": 277.145858110016,
+      "p50_ms": 265.8537335009896,
+      "p95_ms": 286.0838635505388,
+      "p99_ms": 301.5058498889666,
+      "max_ms": 1009.9409290014592,
+      "stddev_ms": 74.39524709906586
+    },
+    "traversal_1hop": {
+      "count": 100,
+      "min_ms": 263.29958099995565,
+      "mean_ms": 266.2392978499338,
+      "p50_ms": 265.5978340008005,
+      "p95_ms": 269.21373985032915,
+      "p99_ms": 284.38501684104267,
+      "max_ms": 285.09532600037346,
+      "stddev_ms": 3.3561441341004494
+    },
+    "traversal_2hop": {
+      "count": 100,
+      "min_ms": 264.03974999993807,
+      "mean_ms": 268.9230593699358,
+      "p50_ms": 266.7557784989185,
+      "p95_ms": 284.02715955044187,
+      "p99_ms": 285.6238626891718,
+      "max_ms": 287.6023469998472,
+      "stddev_ms": 5.348732913722441
+    },
+    "traversal_3hop": {
+      "count": 100,
+      "min_ms": 263.7852779989771,
+      "mean_ms": 288.61269845001516,
+      "p50_ms": 269.86068900077953,
+      "p95_ms": 367.93027299963796,
+      "p99_ms": 422.4286419297096,
+      "max_ms": 428.5825740007567,
+      "stddev_ms": 38.06238551988304
+    },
+    "aggregation": {
+      "count": 100,
+      "min_ms": 305.0871070008725,
+      "mean_ms": 339.2843171600907,
+      "p50_ms": 308.19663100010075,
+      "p95_ms": 315.7254064509288,
+      "p99_ms": 1455.3387323485929,
+      "max_ms": 1741.8187299990677,
+      "stddev_ms": 186.31566186573184
+    }
+  },
+  "index": {
+    "label": "User",
+    "property": "id",
+    "index_name": "user_id_index"
+  },
+  "mixed_workload": [
+    {
+      "concurrency": 1,
+      "operations": 1000,
+      "duration_seconds": 270.831,
+      "throughput_qps": 3.69,
+      "p50_ms": 266.2899210008618,
+      "p95_ms": 275.0775782999881,
+      "p99_ms": 293.54309368007307,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 10,
+      "operations": 1000,
+      "duration_seconds": 32.788,
+      "throughput_qps": 30.5,
+      "p50_ms": 287.6233234992469,
+      "p95_ms": 377.3742983509692,
+      "p99_ms": 970.3499481294602,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 40,
+      "operations": 1000,
+      "duration_seconds": 7.721,
+      "throughput_qps": 129.51,
+      "p50_ms": 269.9447525001233,
+      "p95_ms": 290.0064122997719,
+      "p99_ms": 1429.2616925899529,
+      "errors": 0,
+      "success_rate": 1.0
+    }
+  ],
+  "resources": {
+    "vcpu": "not published",
+    "ram_mb": "2048",
+    "storage_gb": "not published",
+    "cpu_usage": "not observable",
+    "memory_usage": "not observable",
+    "tier": "14-day Cloud trial"
+  },
+  "metadata": {
+    "sampled_nodes": 100,
+    "random_seed": 42,
+    "node_label": "User",
+    "relationship_type": "VOTED"
+  }
+}

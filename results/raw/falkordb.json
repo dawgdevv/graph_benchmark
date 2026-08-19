@@ -1,0 +1,151 @@
+{
+  "database": "falkordb",
+  "dataset": "SNAP Wiki-Vote",
+  "ingestion": {
+    "nodes": 7115,
+    "relationships": 103689,
+    "batch_size": 500,
+    "index_seconds": 0.27090465299988864,
+    "node_load_seconds": 4.103463034000015,
+    "relationship_load_seconds": 61.78926427799888,
+    "total_seconds": 66.16363196499879,
+    "nodes_per_second": 1733.9013270126547,
+    "relationships_per_second": 1678.1070500125736,
+    "node_batches": {
+      "count": 15,
+      "min_ms": 271.590036998532,
+      "mean_ms": 273.51614066647016,
+      "p50_ms": 273.14711899816757,
+      "p95_ms": 276.17563029962184,
+      "p99_ms": 277.99335165887896,
+      "max_ms": 278.44778199869324,
+      "stddev_ms": 1.7351805446386583
+    },
+    "relationship_batches": {
+      "count": 208,
+      "min_ms": 274.070365998341,
+      "mean_ms": 297.01302984613693,
+      "p50_ms": 277.4593874983111,
+      "p95_ms": 543.1683637991227,
+      "p99_ms": 546.3312491924444,
+      "max_ms": 640.8229389999178,
+      "stddev_ms": 69.73632064042195
+    }
+  },
+  "workloads": {
+    "point_lookup": {
+      "count": 100,
+      "min_ms": 263.3616230014013,
+      "mean_ms": 285.1486400700378,
+      "p50_ms": 270.7001444996422,
+      "p95_ms": 320.4587094007365,
+      "p99_ms": 758.5152840198863,
+      "max_ms": 784.5827780001855,
+      "stddev_ms": 71.39055536502333
+    },
+    "indexed_lookup": {
+      "count": 100,
+      "min_ms": 264.890745998855,
+      "mean_ms": 271.25617198005784,
+      "p50_ms": 270.4189710002538,
+      "p95_ms": 277.61617279920756,
+      "p99_ms": 291.0687643601341,
+      "max_ms": 292.6441870004055,
+      "stddev_ms": 4.357519762158797
+    },
+    "traversal_1hop": {
+      "count": 100,
+      "min_ms": 267.86598400212824,
+      "mean_ms": 271.80865243008157,
+      "p50_ms": 271.4883814987843,
+      "p95_ms": 275.33812485235103,
+      "p99_ms": 276.75644336883124,
+      "max_ms": 277.4215620011091,
+      "stddev_ms": 1.9937906032936896
+    },
+    "traversal_2hop": {
+      "count": 100,
+      "min_ms": 268.4183800010942,
+      "mean_ms": 293.71721777995845,
+      "p50_ms": 273.38586949917953,
+      "p95_ms": 376.9760923989452,
+      "p99_ms": 388.62563396083743,
+      "max_ms": 438.8525869981095,
+      "stddev_ms": 39.68618511485065
+    },
+    "traversal_3hop": {
+      "count": 100,
+      "min_ms": 267.96696999736014,
+      "mean_ms": 271.06992017004814,
+      "p50_ms": 270.68146400051774,
+      "p95_ms": 274.8049141979209,
+      "p99_ms": 277.1463790479902,
+      "max_ms": 277.16984700236935,
+      "stddev_ms": 2.0912538748372205
+    },
+    "aggregation": {
+      "count": 100,
+      "min_ms": 297.39766200145823,
+      "mean_ms": 303.3365537798818,
+      "p50_ms": 302.48007949921885,
+      "p95_ms": 309.7186254999542,
+      "p99_ms": 339.3655731392938,
+      "max_ms": 361.519906000467,
+      "stddev_ms": 7.640577419955633
+    }
+  },
+  "index": {
+    "label": "User",
+    "property": "id",
+    "index_name": "user_id_index"
+  },
+  "mixed_workload": [
+    {
+      "concurrency": 1,
+      "operations": 1000,
+      "duration_seconds": 274.077,
+      "throughput_qps": 3.65,
+      "p50_ms": 270.41185249981936,
+      "p95_ms": 275.3312001508675,
+      "p99_ms": 357.6072429909982,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 10,
+      "operations": 1000,
+      "duration_seconds": 29.721,
+      "throughput_qps": 33.65,
+      "p50_ms": 269.62581200132263,
+      "p95_ms": 288.2686436492804,
+      "p99_ms": 753.7229806716639,
+      "errors": 0,
+      "success_rate": 1.0
+    },
+    {
+      "concurrency": 40,
+      "operations": 1000,
+      "duration_seconds": 11.523,
+      "throughput_qps": 86.78,
+      "p50_ms": 272.25098900089506,
+      "p95_ms": 756.0938950993658,
+      "p99_ms": 4314.060796417143,
+      "errors": 10,
+      "success_rate": 0.99
+    }
+  ],
+  "resources": {
+    "vcpu": "not published",
+    "ram_mb": "not published",
+    "storage_gb": "not published",
+    "cpu_usage": "not observable",
+    "memory_usage": "not observable",
+    "tier": "free instance"
+  },
+  "metadata": {
+    "sampled_nodes": 100,
+    "random_seed": 42,
+    "node_label": "User",
+    "relationship_type": "VOTED"
+  }
+}

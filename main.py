@@ -2,58 +2,123 @@ import argparse
 import json
 from pathlib import Path
 
-from benchmark.adapters.cognodb import CognoDBAdapter
+from benchmark.adapters import get_adapter
 from benchmark.config import (
+    DATABASES,
     DATASET_NAME,
     NODE_LABEL,
     RAW_RESULTS_DIR,
     RELATIONSHIP_TYPE,
 )
-from benchmark.loader import load_cognodb
+from benchmark.loader import ensure_user_index, load_graph
 from benchmark.runner import BenchmarkRunner
-from benchmark.workloads import CREATE_USER_INDEX
 from dataset.prepare import prepare_dataset
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="CognoDB graph benchmark using the SNAP Wiki-Vote dataset."
+        description="Graph benchmark against managed cloud databases using SNAP Wiki-Vote."
+    )
+    parser.add_argument(
+        "--db",
+        choices=sorted(DATABASES),
+        default="cognodb",
+        help="Cloud database to run. Default: cognodb.",
     )
     parser.add_argument(
         "--load",
         action="store_true",
-        help="Prepare the dataset, clear CognoDB, and load the full graph.",
+        help="Prepare the dataset, clear the database, load the full graph, and write ingestion metrics.",
     )
     parser.add_argument(
         "--benchmark",
         action="store_true",
-        help="Run the current CognoDB read benchmark against already loaded data.",
+        help="Run the read/write benchmark against already loaded data.",
     )
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Prepare, load, and then benchmark CognoDB.",
+        help="Prepare, load, and then benchmark the selected database.",
     )
     return parser.parse_args()
 
 
-def build_resources() -> dict:
-    return {
-        "vcpu": "not observable",
-        "ram_mb": "not observable",
-        "storage_gb": "not observable",
-        "cpu_usage": "not observable",
-        "memory_usage": "not observable",
-    }
+def build_resources(database_name: str) -> dict:
+    return dict(DATABASES[database_name]["resources"])
+
+
+def results_path(database_name: str) -> Path:
+    return RAW_RESULTS_DIR / f"{database_name}.json"
+
+
+def read_results(database_name: str) -> dict:
+    path = results_path(database_name)
+
+    if not path.exists():
+        return {}
+
+    with path.open("r", encoding="utf-8") as file:
+        return json.load(file)
 
 
 def write_results(database_name: str, output: dict) -> Path:
-    path = RAW_RESULTS_DIR / f"{database_name}.json"
+    path = results_path(database_name)
 
     with path.open("w", encoding="utf-8") as file:
-        json.dump(output, file, indent=2)
+        json.dump(output, file, indent=2, default=_json_default)
 
     return path
+
+
+def _json_default(value):
+    if hasattr(value, "item"):
+        return value.item()
+    raise TypeError(f"{type(value).__name__} is not JSON serializable")
+
+
+def merge_results(database_name: str, updates: dict) -> Path:
+    output = read_results(database_name)
+    previous_ingestion = output.get("ingestion")
+    updates = dict(updates)
+
+    if updates.get("ingestion") is None:
+        updates.pop("ingestion", None)
+
+    output.update(updates)
+
+    if output.get("ingestion") is None and previous_ingestion is not None:
+        output["ingestion"] = previous_ingestion
+
+    return write_results(database_name, output)
+
+
+def print_ingestion(ingestion: dict) -> None:
+    print(
+        "Ingestion: "
+        f"{ingestion['nodes']:,} nodes / "
+        f"{ingestion['relationships']:,} relationships "
+        f"in {ingestion['total_seconds']:.2f}s "
+        f"({ingestion['relationships_per_second']:.1f} rel/s)"
+    )
+
+    node_batches = ingestion.get("node_batches")
+    relationship_batches = ingestion.get("relationship_batches")
+
+    if node_batches:
+        print(
+            "  node batches: "
+            f"p50={node_batches['p50_ms']:.2f} ms, "
+            f"p95={node_batches['p95_ms']:.2f} ms, "
+            f"p99={node_batches['p99_ms']:.2f} ms"
+        )
+
+    if relationship_batches:
+        print(
+            "  relationship batches: "
+            f"p50={relationship_batches['p50_ms']:.2f} ms, "
+            f"p95={relationship_batches['p95_ms']:.2f} ms, "
+            f"p99={relationship_batches['p99_ms']:.2f} ms"
+        )
 
 
 def main() -> None:
@@ -67,20 +132,31 @@ def main() -> None:
     if args.load or args.all:
         prepare_dataset()
 
-    adapter = CognoDBAdapter()
-    database_name = "cognodb"
+    adapter = get_adapter(args.db)
+    database_name = args.db
     ingestion = None
 
     try:
-        print("Connecting to CognoDB...")
+        print(f"Connecting to {DATABASES[database_name]['label']}...")
         adapter.connect()
         print("Connected.")
 
         if args.load or args.all:
-            ingestion = load_cognodb(adapter, reset=True)
+            ingestion = load_graph(adapter, database_name, reset=True)
+            path = merge_results(
+                database_name,
+                {
+                    "database": database_name,
+                    "dataset": DATASET_NAME,
+                    "ingestion": ingestion,
+                },
+            )
+            print()
+            print(f"Ingestion metrics written to: {path}")
+            print_ingestion(ingestion)
 
         if args.benchmark or args.all:
-            adapter.execute(CREATE_USER_INDEX)
+            ensure_user_index(adapter, database_name)
 
             runner = BenchmarkRunner(
                 adapter=adapter,
@@ -88,6 +164,15 @@ def main() -> None:
             )
 
             run_result = runner.run(node_id="30")
+
+            if ingestion is None:
+                ingestion = read_results(database_name).get("ingestion")
+                if ingestion is None:
+                    print(
+                        f"Ingestion is still null because this run did not load data. "
+                        f"Do not delete results/raw/{database_name}.json. "
+                        f"Run `python main.py --db {database_name} --load` once to capture ingestion metrics."
+                    )
 
             output = {
                 "database": database_name,
@@ -107,7 +192,7 @@ def main() -> None:
                     "index_name": "user_id_index",
                 },
                 "mixed_workload": run_result["mixed_workload"],
-                "resources": build_resources(),
+                "resources": build_resources(database_name),
                 "metadata": {
                     "sampled_nodes": run_result["sampled_nodes"],
                     "random_seed": run_result["random_seed"],
@@ -116,21 +201,17 @@ def main() -> None:
                 },
             }
 
-            path = write_results(database_name, output)
+            path = merge_results(database_name, output)
+            output = read_results(database_name)
+            ingestion = output.get("ingestion")
 
             print()
             print("Benchmark complete.")
             print(f"Results written to: {path}")
             print()
 
-            if ingestion:
-                print(
-                    "Ingestion: "
-                    f"{ingestion['nodes']:,} nodes / "
-                    f"{ingestion['relationships']:,} relationships "
-                    f"in {ingestion['total_seconds']:.2f}s "
-                    f"({ingestion['relationships_per_second']:.1f} rel/s)"
-                )
+            if ingestion is not None:
+                print_ingestion(ingestion)
 
             for name, result in output["workloads"].items():
                 print(

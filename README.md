@@ -13,18 +13,32 @@ same workloads, same client machine, entry/free cloud tiers only.
 ## 1. Platforms & resource fairness
 
 Assignment rule: *same resources everywhere, or as close as the free/entry tiers allow.*
-Each platform's **advertised** specs are recorded below; free tiers rarely publish full spec lists,
-so this parity is approximate — that is itself recorded honestly in the [caveats](#8-caveats).
+Figures below are **advertised free-plan specs** from vendor pages (August 2026), not live CPU%/RSS
+from inside the instance — none of these free clouds expose process CPU or memory usage to the
+benchmark client.
 
-| Platform | Tier | vCPU | RAM | Storage | Region |
-|---|---|---|---|---|---|
-| CognoDB Cloud | free `c0` | 0.5 burstable | 256 MB | 1 GB | unrecorded |
-| Neo4j Aura | AuraDB Free | not published | not published | not published | gcp-us-central1 |
-| Memgraph Cloud | 14-day trial | not published | 2048 MB | not published | unrecorded |
-| FalkorDB Cloud | free instance | not published | not published | not published | unrecorded |
-| TypeDB Cloud | Cloud free/trial | not published | not published | not published | unrecorded |
+| Platform | Tier | vCPU | RAM | Storage | Limits | Region |
+|---|---|---|---|---|---|---|
+| CognoDB Cloud | free `c0` | 0.5 burstable | 512 MB | 1 GB | 200 connections | us-east4, us-central1, europe-west1 |
+| Neo4j Aura | AuraDB Free | not published | not published (page cache slightly larger than 1 GB Professional) | not published | 200k nodes / 400k relationships; 1 instance; pause after 72h idle | GCP us-central1 only |
+| Memgraph Cloud | 14-day trial | not published (Cloud SKUs go up to 8 cores) | 2 GB (~1.60 GB usable after OS) | not published | 1 project; snapshots disabled on trial | AWS, 6 regions |
+| FalkorDB Cloud | Free | not published | 100 MB | in-memory (max graph = 100 MB) | no TLS; no persistence; idle stop 1 day, delete after 7 days | AWS or GCP |
+| TypeDB Cloud | Explore (free forever) | 2 burstable | 4 GB on free VMs (`e2-medium` / `t4g.medium`); pricing page still lists 8 GB | 10 GB | 1 free cluster per team; backups disabled | GCP or AWS |
 
-The dataset (≈104k relationships) fits comfortably in the smallest allocation (CognoDB 1 GB / 256 MB).
+Wiki-Vote (~7k nodes / 104k edges) fits the tightest advertised RAM (FalkorDB 100 MB) and the
+tightest advertised disk (CognoDB 1 GB). CognoDB's public site lists **512 MB** for `c0`; the
+assignment brief said 256 MB — this README uses the vendor figure.
+
+**Sources** (what each free plan actually publishes):
+
+- CognoDB: [cognodb.com](https://cognodb.com/) — “One c0 instance: 0.5 vCPU, 512 MB of memory and 1 GB of storage, with 200 connections.”
+- Neo4j Aura Free: [Aura Free FAQ](https://support.neo4j.com/s/article/16094506528787-Support-resources-and-FAQ-for-Aura-Free-Tier) (200k/400k caps); [Aura FAQ](https://neo4j.com/cloud/platform/aura-graph-database/faq/) (1 instance, no card); [Free vs Professional](https://support.neo4j.com/s/article/20025028298003-How-Does-Free-Tier-Differ-From-Professional-Tier) (page cache slightly larger than 1 GB Professional; vCPU/RAM otherwise hidden); GraphAcademy (GCP `us-central1` only).
+- Memgraph Cloud: [Memgraph Cloud docs](https://memgraph.com/docs/getting-started/install-memgraph/memgraph-cloud) (14-day trial, one 2 GB RAM project); [FAQ](https://memgraph.com/docs/help-center/faq) (~1.60 GB usable on a 2 GB project). Trial vCPU and disk are not listed.
+- FalkorDB Cloud: [Free Tier](https://docs.falkordb.com/cloud/free-tier.html) — 100 MB RAM, max graph 100 MB, AWS/GCP, no TLS, no persistence.
+- TypeDB Cloud: [Pricing](https://typedb.com/pricing) Explore column (2 vCPU / 8 GB RAM / 10 GB); [Nov 2025 free-tier resize](https://www.answeroverflow.com/m/1434961085668003891) to GCP `e2-medium` / AWS `t4g.medium` (2 burstable vCPU, 4 GB RAM); [Cloud API](https://typedb.com/docs/reference/cloud-http-api/) (free = 1 server, 10 GB storage, backups disabled).
+
+> **Status:** measured results below cover CognoDB, Neo4j Aura, Memgraph Cloud and FalkorDB Cloud.
+> The TypeDB Cloud adapter is fully wired (`python main.py --db typedb --all`) — run pending.
 
 ## 2. Dataset
 
@@ -40,8 +54,8 @@ in batches of 500, one `User.id` index created before loading, graph cleared wit
 each run.
 
 **Load method (TypeDB):** same rows and logical operations, mapped to TypeQL (`user` / `voted` /
-`user-id @key`) via `typedb-driver`. Ingest uses smaller write chunks (50) because TypeDB match-insert
-is per-edge, not `UNWIND`.
+`user-id @key`) via `typedb-driver`. Batches of 2000 rows, inserted with TypeDB `given` rows
+(one parameterized query per 500 facts, one transaction per batch).
 
 ## 3. Methodology
 
@@ -62,6 +76,16 @@ is per-edge, not `UNWIND`.
 | 3-hop | `MATCH (u:User {id: $id})-[:VOTED]->()-[:VOTED]->()-[:VOTED]->(v) RETURN count(v)` |
 | Aggregation | `MATCH (u:User)-[:VOTED]->() RETURN u.id, count(*) AS votes ORDER BY votes DESC LIMIT 100` |
 | Write tick (mix) | `MATCH (u:User {id: $id}) SET u.benchmark_mark = $mark` |
+
+**TypeDB mappings** (same logical operations in TypeQL — `user` entity with `user-id @key`, `voted` relation):
+
+| Workload | TypeQL |
+|---|---|
+| Point lookup | `match $u isa user, has user-id "<id>"; fetch { "id": $u.user-id };` |
+| Indexed lookup | `match $u isa user, has user-id $id; $id == "<id>"; fetch { "id": $id };` |
+| 1-hop … 3-hop | `match $n0 isa user, has user-id "<id>"; (voter: $n0, votee: $n1) isa voted; … reduce $count = count;` |
+| Aggregation | `match $u isa user, has user-id $id; (voter: $u, votee: $v) isa voted; reduce $votes = count groupby $id; sort $votes desc; limit 100;` |
+| Write tick (mix) | `match $u isa user, has user-id "<id>"; update $u has benchmark-mark <mark>;` |
 
 ## 4. How to reproduce
 
@@ -84,7 +108,7 @@ Environment variables (`.env`, read by the harness via `python-dotenv`):
 | `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD` | `neo4j+s://xxxx.databases.neo4j.io` |
 | `MEMGRAPH_URI`, `MEMGRAPH_USERNAME`, `MEMGRAPH_PASSWORD` | `bolt+ssc://<host>:7687` |
 | `FALKORDB_URI`, `FALKORDB_PASSWORD` | `falkor://<username>@<host>:<port>` (native RESP) |
-| `TYPEDB_ADDRESS`, `TYPEDB_USERNAME`, `TYPEDB_PASSWORD` | `https://<cluster>.cloud.typedb.com:8000` |
+| `TYPEDB_ADDRESS`, `TYPEDB_USERNAME`, `TYPEDB_PASSWORD`, `TYPEDB_DATABASE` | `https://<cluster>.cloud.typedb.com:8000` (database defaults to `wikivote`) |
 
 Run a full cycle (prepare dataset → load → benchmark) for one platform:
 
@@ -148,14 +172,18 @@ All latency in milliseconds; lower is better for latency. Ingest and qps: higher
 | 40 | Memgraph Cloud | 129.51 | 269.9 | 290.0 | 1,429.3 | 0 | 100% |
 | 40 | FalkorDB Cloud | 86.78 | 272.3 | 756.1 | 4,314.1 | 10 | 99.0% |
 
-### 5.4 Footprint
+### 5.4 Footprint (advertised free-plan allocation)
+
+Live CPU% and RSS are not exposed on these free clouds, so those columns stay “not exposed”.
+The allocation columns are the vendor-published free-tier numbers from §1.
 
 | Platform | vCPU | RAM | Storage | CPU usage | Memory usage |
 |---|---|---|---|---|---|
-| CognoDB Cloud | 0.5 burstable | 256 MB | 1 GB | not observable | not observable |
-| Neo4j Aura | not published | not published | not published | not observable | not observable |
-| Memgraph Cloud | not published | 2048 MB | not published | not observable | not observable |
-| FalkorDB Cloud | not published | not published | not published | not observable | not observable |
+| CognoDB Cloud | 0.5 burstable | 512 MB | 1 GB | not exposed | not exposed |
+| Neo4j Aura | not published | not published (page cache slightly > 1 GB Pro) | not published | not exposed | not exposed |
+| Memgraph Cloud | not published | 2 GB (~1.60 GB usable) | not published | not exposed | not exposed |
+| FalkorDB Cloud | not published | 100 MB | in-memory, 100 MB max graph | not exposed | not exposed |
+| TypeDB Cloud | 2 burstable | 4 GB free VM (pricing lists 8 GB) | 10 GB | not exposed | not exposed |
 
 ## 6. Analysis
 
@@ -172,20 +200,22 @@ per-query latency composed of client → cloud round-trips. Note ingestion batch
 
 **Mixed-workload scaling separates them.** At 40 clients: Neo4j 342 qps, Memgraph 130 qps, FalkorDB
 87 qps (but 10 errors, 99.0% success), CognoDB 54 qps with a p99 spike to 5.2 s and 1 error. Memgraph
-scales with the least tail degradation (p99 1.4 s). CognoDB's free `c0` (0.5 burstable vCPU, 256 MB) is
+scales with the least tail degradation (p99 1.4 s). CognoDB's free `c0` (0.5 burstable vCPU, 512 MB) is
 the most constrained allocation and shows it under load; it was never left with a completely clean
 tail — p99 5.2 s at 40 clients is a throttling signature.
 
 **Honest read:** this is a free-tier comparison, not a fixed-hardware benchmark. The assignment demands
-"same resources or as close as tiers allow" — free tiers don't publish their allocations, so part of
-what we measured is each vendor's free-tier generosity. Neo4j's larger allowance explains part of its
-win; the ~270 ms floor of the others is plausibly regional network + tier throttling. What is *not*
-explained by hardware is Neo4j's flat p95 scaling through 3 hops, which suggests a more efficient
-query path for path-length-independent lookups + index use.
+"same resources or as close as tiers allow." Advertised RAM now spans **100 MB (FalkorDB)** to
+**2 GB (Memgraph trial)** and **4–8 GB (TypeDB Explore)** vs CognoDB's **512 MB** `c0`. Neo4j still
+hides vCPU/RAM and caps the graph at 200k/400k instead. Part of what we measured is each vendor's
+free-tier generosity. Neo4j's larger (unpublished) allowance explains part of its win; the ~270 ms
+floor of the others is plausibly regional network + tier throttling. What is *not* explained by
+hardware is Neo4j's flat p95 scaling through 3 hops, which suggests a more efficient query path for
+path-length-independent lookups + index use.
 
 ## 7. Reproducibility & code quality
 
-- `requirements.txt` pins the stack (neo4j driver, falkordb client, pandas, streamlit, numpy)
+- `requirements.txt` pins the stack (neo4j driver, falkordb client, typedb-driver, pandas, streamlit, numpy)
 - Deterministic seed (42) for sampled start nodes; same nodes for every platform
 - One command per platform: `python main.py --db <name> --all`
 - Results are machine-readable JSON in `results/raw/`; dashboard renders them (charts)
@@ -209,11 +239,16 @@ graph_benchmark/
 
 ## 8. Caveats
 
-- **Resource parity is approximate.** Only CognoDB publishes vCPU/RAM/storage for its free tier;
-  Neo4j/Memgraph/FalkorDB/TypeDB publish partial or no specs. Assume their allocations ≥ CognoDB's (256 MB) —
-  asymmetric allocations are the main threat to fairness in this comparison.
-- **Region variance.** Only Neo4j's region was recorded (gcp-us-central1). The others provision wherever
-  the free tier assigned; a single region for all platforms is planned for a future run.
+- **Resource parity is approximate.** Advertised free-tier RAM is now filled in where vendors publish
+  it (CognoDB 512 MB, Memgraph 2 GB, FalkorDB 100 MB, TypeDB 4 GB on free VMs / 8 GB on the pricing
+  page). Neo4j still does not publish vCPU or RAM for Aura Free. Asymmetric allocations are the main
+  threat to fairness in this comparison.
+- **Live CPU / memory usage is not exposed** on any of these free clouds, so those columns cannot be
+  filled from the client. Only advertised allocation is recorded.
+- **Region variance.** Advertised regions differ: Neo4j Free is GCP `us-central1` only; CognoDB offers
+  `us-east4` / `us-central1` / `europe-west1`; Memgraph is AWS (6 regions); FalkorDB and TypeDB are
+  AWS or GCP. The actual region of each run was whatever the free console assigned; only Neo4j's
+  (`gcp-us-central1`) was recorded in the result JSON.
 - **Client machine not recorded** in the JSON metadata; all runs came from the same laptop.
 - **Cold start not separated.** 20 warm-up iterations were discarded; first-query (cold) numbers were
   not recorded separately.
@@ -222,7 +257,8 @@ graph_benchmark/
 - **No dataset caching on target**: each load starts from an empty graph (verified counts) so partial
   retries can't contaminate numbers.
 - **TypeDB is TypeQL, not Cypher.** Workloads are the same logical ops (`user` / `voted` / `user-id @key`);
-  ingest of 103k relations via match-insert is expected to be slower than Bolt `UNWIND`.
+  ingest of 103k relations via match-insert is expected to be slower than Bolt `UNWIND`. TypeDB results
+  are not yet in the matrix (adapter wired, run pending).
 
 ## 9. Extension points
 

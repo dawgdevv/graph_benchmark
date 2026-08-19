@@ -10,6 +10,7 @@ from benchmark.config import (
     LOAD_BATCH_SIZE,
     NODES_PATH,
     RAW_RESULTS_DIR,
+    TYPEDB_LOAD_BATCH_SIZE,
 )
 from benchmark.metrices import summarize_latencies
 
@@ -111,23 +112,26 @@ def load_graph(adapter, database_name: str, reset: bool = True) -> dict:
     ensure_user_index(adapter, database_name)
     index_seconds = time.perf_counter() - index_start
 
-    print(f"Loading {len(nodes):,} nodes in batches of {LOAD_BATCH_SIZE}...")
+    batch_size = _load_batch_size(database_name)
+    print(f"Loading {len(nodes):,} nodes in batches of {batch_size}...")
     node_seconds, node_batch_ms = _load_batches(
         adapter,
         LOAD_NODES,
         nodes,
         "nodes",
+        batch_size,
     )
 
     print(
         f"Loading {len(edges):,} relationships "
-        f"in batches of {LOAD_BATCH_SIZE}..."
+        f"in batches of {batch_size}..."
     )
     relationship_seconds, relationship_batch_ms = _load_batches(
         adapter,
         LOAD_RELATIONSHIPS,
         edges,
         "relationships",
+        batch_size,
     )
 
     actual_nodes = int(adapter.execute_value(COUNT_NODES) or 0)
@@ -138,7 +142,7 @@ def load_graph(adapter, database_name: str, reset: bool = True) -> dict:
     result = {
         "nodes": actual_nodes,
         "relationships": actual_relationships,
-        "batch_size": LOAD_BATCH_SIZE,
+        "batch_size": batch_size,
         "index_seconds": index_seconds,
         "node_load_seconds": node_seconds,
         "relationship_load_seconds": relationship_seconds,
@@ -194,22 +198,29 @@ def load_graph(adapter, database_name: str, reset: bool = True) -> dict:
     return result
 
 
+def _load_batch_size(database_name: str) -> int:
+    if database_name == "typedb":
+        return TYPEDB_LOAD_BATCH_SIZE
+    return LOAD_BATCH_SIZE
+
+
 def _load_batches(
     adapter,
     query: str,
     rows: list[dict[str, str]],
     label: str,
+    batch_size: int,
 ) -> tuple[float, list[float]]:
     start = time.perf_counter()
     latencies_ms: list[float] = []
     loaded = 0
 
-    for batch in batched(rows, LOAD_BATCH_SIZE):
+    for batch in batched(rows, batch_size):
         batch_start = time.perf_counter()
         adapter.execute(query, {"rows": batch})
         latencies_ms.append((time.perf_counter() - batch_start) * 1000)
         loaded += len(batch)
-        print(f"  {label}: {loaded:,}/{len(rows):,}", end="\r")
+        print(f"  {label}: {loaded:,}/{len(rows):,}", end="\r", flush=True)
 
     print()
     return time.perf_counter() - start, latencies_ms

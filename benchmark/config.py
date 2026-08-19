@@ -32,63 +32,73 @@ READ_RATIO = 0.80
 WRITE_RATIO = 0.20
 
 LOAD_BATCH_SIZE = 500
+# TypeDB has no UNWIND: one TypeQL query per batch, so larger batches mean fewer commits.
+TYPEDB_LOAD_BATCH_SIZE = 2000
 
 DATABASES = {
     "cognodb": {
         "label": "CognoDB Cloud",
         "resources": {
             "vcpu": "0.5 burstable",
-            "ram_mb": "256",
+            "ram_mb": "512",
             "storage_gb": "1",
-            "cpu_usage": "not observable",
-            "memory_usage": "not observable",
+            "cpu_usage": "not exposed by vendor",
+            "memory_usage": "not exposed by vendor",
             "tier": "free c0",
+            "limits": "200 connections",
+            "region": "us-east4 / us-central1 / europe-west1",
         },
     },
     "neo4j": {
         "label": "Neo4j Aura Free",
         "resources": {
             "vcpu": "not published",
-            "ram_mb": "not published",
+            "ram_mb": "not published (page cache slightly > 1 GB Professional)",
             "storage_gb": "not published",
-            "cpu_usage": "not observable",
-            "memory_usage": "not observable",
+            "cpu_usage": "not exposed by vendor",
+            "memory_usage": "not exposed by vendor",
             "tier": "AuraDB Free",
-            "limits": "200000 nodes / 400000 relationships",
+            "limits": "200000 nodes / 400000 relationships; 1 instance; pause after 72h idle",
             "region": "gcp-us-central1",
         },
     },
     "memgraph": {
         "label": "Memgraph Cloud",
         "resources": {
-            "vcpu": "not published",
-            "ram_mb": "2048",
+            "vcpu": "not published (Cloud SKUs up to 8 cores)",
+            "ram_mb": "2048 (~1600 usable)",
             "storage_gb": "not published",
-            "cpu_usage": "not observable",
-            "memory_usage": "not observable",
+            "cpu_usage": "not exposed by vendor",
+            "memory_usage": "not exposed by vendor",
             "tier": "14-day Cloud trial",
+            "limits": "1 project; snapshots disabled on trial",
+            "region": "AWS (6 regions)",
         },
     },
     "falkordb": {
         "label": "FalkorDB Cloud",
         "resources": {
             "vcpu": "not published",
-            "ram_mb": "not published",
-            "storage_gb": "not published",
-            "cpu_usage": "not observable",
-            "memory_usage": "not observable",
+            "ram_mb": "100",
+            "storage_gb": "in-memory (100 MB max graph)",
+            "cpu_usage": "not exposed by vendor",
+            "memory_usage": "not exposed by vendor",
             "tier": "free instance",
+            "limits": "no TLS; no persistence; idle stop 1 day / delete 7 days",
+            "region": "AWS or GCP",
         },
     },
     "typedb": {
         "label": "TypeDB Cloud",
         "resources": {
-            "vcpu": "not published",
-            "ram_mb": "not published",
-            "storage_gb": "not published",
-            "cpu_usage": "not observable",
-            "memory_usage": "not observable",
-            "tier": "Cloud free/trial",
+            "vcpu": "2 burstable",
+            "ram_mb": "4096 (e2-medium / t4g.medium); pricing page lists 8192",
+            "storage_gb": "10",
+            "cpu_usage": "not exposed by vendor",
+            "memory_usage": "not exposed by vendor",
+            "tier": "Explore (free forever)",
+            "limits": "1 free cluster per team; backups disabled",
+            "region": "GCP or AWS",
         },
     },
 }

@@ -50,7 +50,21 @@ define
 
 WRITE_TIMEOUT = TransactionOptions(transaction_timeout_millis=10 * 60 * 1000)
 SAFE_ID = re.compile(r"^[A-Za-z0-9_-]+$")
-CHUNK = 50
+INSERT_CHUNK = 500
+
+INSERT_USERS = """
+given $id: string;
+insert $u isa user, has user-id == $id;
+"""
+
+INSERT_VOTES = """
+given $source: string, $target: string;
+match
+  $s isa user, has user-id == $source;
+  $t isa user, has user-id == $target;
+insert
+  (voter: $s, votee: $t) isa voted;
+"""
 
 
 def _norm(query: str) -> str:
@@ -157,15 +171,35 @@ class TypeDBCloudAdapter(DatabaseAdapter):
             raise ValueError("TypeDB adapter has no mapping for this Cypher query.")
         return handler(params)
 
+    def _drain(self, answer) -> None:
+        if answer.is_concept_rows():
+            for _ in answer.as_concept_rows():
+                pass
+        elif answer.is_concept_documents():
+            for _ in answer.as_concept_documents():
+                pass
+
     def _write(self, queries: list[str]) -> None:
         with self.driver.transaction(
             self.database,
             TransactionType.WRITE,
             options=WRITE_TIMEOUT,
         ) as tx:
-            promises = [tx.query(query) for query in queries]
-            for promise in promises:
-                promise.resolve()
+            for query in queries:
+                self._drain(tx.query(query).resolve())
+            tx.commit()
+
+    def _write_given(self, query: str, rows: list[dict[str, str]]) -> None:
+        if not rows:
+            return
+        with self.driver.transaction(
+            self.database,
+            TransactionType.WRITE,
+            options=WRITE_TIMEOUT,
+        ) as tx:
+            for start in range(0, len(rows), INSERT_CHUNK):
+                chunk = rows[start : start + INSERT_CHUNK]
+                self._drain(tx.query(query, given_rows=chunk).resolve())
             tx.commit()
 
     def _read(self, query: str):
@@ -196,30 +230,19 @@ class TypeDBCloudAdapter(DatabaseAdapter):
             raise
 
     def _load_nodes(self, params: dict[str, Any]):
-        rows = params["rows"]
-        for start in range(0, len(rows), CHUNK):
-            chunk = rows[start : start + CHUNK]
-            queries = [
-                f'insert $u isa user, has user-id "{_id(row["id"])}";'
-                for row in chunk
-            ]
-            self._write(queries)
+        self._write_given(
+            INSERT_USERS,
+            [{"id": _id(row["id"])} for row in params["rows"]],
+        )
 
     def _load_relationships(self, params: dict[str, Any]):
-        rows = params["rows"]
-        for start in range(0, len(rows), CHUNK):
-            chunk = rows[start : start + CHUNK]
-            queries = [
-                f"""
-                match
-                  $s isa user, has user-id "{_id(row["source"])}";
-                  $t isa user, has user-id "{_id(row["target"])}";
-                insert
-                  (voter: $s, votee: $t) isa voted;
-                """
-                for row in chunk
-            ]
-            self._write(queries)
+        self._write_given(
+            INSERT_VOTES,
+            [
+                {"source": _id(row["source"]), "target": _id(row["target"])}
+                for row in params["rows"]
+            ],
+        )
 
     def _clear(self, _params: dict[str, Any]):
         self._write(

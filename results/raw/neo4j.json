@@ -136,12 +136,12 @@
   ],
   "resources": {
     "vcpu": "not published",
-    "ram_mb": "not published",
+    "ram_mb": "not published (page cache slightly > 1 GB Professional)",
     "storage_gb": "not published",
-    "cpu_usage": "not observable",
-    "memory_usage": "not observable",
+    "cpu_usage": "not exposed by vendor",
+    "memory_usage": "not exposed by vendor",
     "tier": "AuraDB Free",
-    "limits": "200000 nodes / 400000 relationships",
+    "limits": "200000 nodes / 400000 relationships; 1 instance; pause after 72h idle",
     "region": "gcp-us-central1"
   },
   "metadata": {

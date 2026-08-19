@@ -135,12 +135,14 @@
     }
   ],
   "resources": {
-    "vcpu": "not published",
-    "ram_mb": "2048",
+    "vcpu": "not published (Cloud SKUs up to 8 cores)",
+    "ram_mb": "2048 (~1600 usable)",
     "storage_gb": "not published",
-    "cpu_usage": "not observable",
-    "memory_usage": "not observable",
-    "tier": "14-day Cloud trial"
+    "cpu_usage": "not exposed by vendor",
+    "memory_usage": "not exposed by vendor",
+    "tier": "14-day Cloud trial",
+    "limits": "1 project; snapshots disabled on trial",
+    "region": "AWS (6 regions)"
   },
   "metadata": {
     "sampled_nodes": 100,

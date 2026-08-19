@@ -1,0 +1,35 @@
+{
+  "database": "typedb",
+  "dataset": "SNAP Wiki-Vote",
+  "ingestion": {
+    "nodes": 7115,
+    "relationships": 103689,
+    "batch_size": 2000,
+    "index_seconds": 0.881924050001544,
+    "node_load_seconds": 13.282507523999811,
+    "relationship_load_seconds": 117.82392956399781,
+    "total_seconds": 131.98836113799916,
+    "nodes_per_second": 535.6669278857245,
+    "relationships_per_second": 880.0334565626569,
+    "node_batches": {
+      "count": 4,
+      "min_ms": 2068.060121997405,
+      "mean_ms": 3320.531613249841,
+      "p50_ms": 3053.9572720008437,
+      "p95_ms": 4803.128310500323,
+      "p99_ms": 5045.547091700281,
+      "max_ms": 5106.151787000272,
+      "stddev_ms": 1278.1889359112793
+    },
+    "relationship_batches": {
+      "count": 52,
+      "min_ms": 2134.878941000352,
+      "mean_ms": 2265.7661787307006,
+      "p50_ms": 2227.0713569996587,
+      "p95_ms": 2441.5003073996554,
+      "p99_ms": 2746.590240731385,
+      "max_ms": 2966.904313001578,
+      "stddev_ms": 128.7627132365642
+    }
+  }
+}
